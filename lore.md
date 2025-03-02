@@ -101,8 +101,13 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     - The major problem: unsoundness bug in Rustc and LLVM: [unsoundness in safe Rust](https://github.com/rust-lang/rust/issues/25860#issuecomment-1955285462); [Open issues about unsoundness](https://github.com/rust-lang/rust/issues?q=state%3Aopen%20label%3A%22I-unsound%22)
     - [Rudra](https://taesoo.kim/pubs/2021/bae:rudra.pdf) also discusses this. One hole in the soundness can compromise the memory safety of the whole system: basically Rust degenerates to C. 
     - There exists research operating systems that implement isolation based on Rust safety: RedLeaf and TockOS. TockOS targets microcontrollers that does not have MMU. 
-- Rust + Verification for Zero-overhead Isolation
-    - Ideally we will have a verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB.
+- Rust + Verification towards Zero-overhead Isolation
+    - Ideally we will have: 
+        - A verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB.
+        - On top of that we can build a verified runtime service and std for software sandboxes(memory allocator, IO etc). All interfaces are safe but to use some interface with higher order invariants the application developer must provide proofs(for example, assertions) to satisfy the preconditions of the interface  
+        - The sandboxed code is restricted to safe Rust so that the ownership system can provide memory safety guarantees(and information flow control? Enforcing security polices via types).
+        - Cross domain call proxying for fault isolation(See Redleaf)
+
     - Unfortunately, Rust does not have a language specification. Memory model and operational semantics are not defined.
     - No third-party frontend compiler 
     - Currently most Rust program verifier drives Rustc. Verus, especially, also relies of the correctness of the borrow checker of Rustc, 
