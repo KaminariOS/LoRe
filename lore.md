@@ -1,4 +1,6 @@
-# LoRe: loadtime binary rewrite for software fault isolation
+<!-- # LoRe: loadtime binary rewrite for software fault isolation -->
+# Towards Zero-overhead Software Fault Isolation
+
 
 ## Abstract 
 (Skip this part)
@@ -86,27 +88,30 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     - SFI overhead is high(2 reserved registers and 2 added instructions for guarding)
 
 - Is it possible to combine safe Rust with SFI?
+    - SFI is language-independent.
     <!-- We need a foundational proof of the type system: check [RefineRust](https://plv.mpi-sws.org/refinedrust)(Try #25860 with refinedRust, unfortunately it does not work)  -->
     - [TRust](https://www.usenix.org/system/files/usenixsecurity23-bang.pdf) uses SFI(with source code) or Intel MPK(without source code, usually FFI) to isolate unsafe Rust code from safe Rust(12% overhead, high). Threat model: safe Rust code is trusted but unsafe code(as a dependency) is not.
+    - Unfortunately, SFI cannot mitigate unsoundness of safe Rust.
     
 - Rust(ownership) for Isolation
     <!-- - Preserve type info in the assembly? Not workable. The problem remains the same: the implementation of the type system may be buggy.  -->
     - The soundness of the Rust type system has been formulated by RustBelt(followup: RefinedRust)
     - The unique ownership system of safe Rust can be used to establish protection domains(see [RedLeaf](https://www.usenix.org/system/files/osdi20-narayanan_vikram.pdf)) at almost zero cost 
     - Rust for isolation: TCB too huge: Rustc and LLVM. However, the benefit is 
-        - (almost)zero-cost isolation , 
+        - (almost)zero-cost isolation, 
         - hardware-independent, 
         - object level granularity, flexible. 
         - Problems with assembly rewriter: lack of semantic information, too many runtime checks. 
     - The major problem: unsoundness bug in Rustc and LLVM: [unsoundness in safe Rust](https://github.com/rust-lang/rust/issues/25860#issuecomment-1955285462); [Open issues about unsoundness](https://github.com/rust-lang/rust/issues?q=state%3Aopen%20label%3A%22I-unsound%22)
-    - [Rudra](https://taesoo.kim/pubs/2021/bae:rudra.pdf) also discusses this. One hole in the soundness can compromise the memory safety of the whole system: basically Rust degenerates to C. 
+    - [Rudra](https://taesoo.kim/pubs/2021/bae:rudra.pdf) also discusses this. One hole in the soundness can compromise the memory safety of the whole system: basically Rust degenerates to C or worse, undefined behaviors. 
     - There exists research operating systems that implement isolation based on Rust safety: RedLeaf and TockOS. TockOS targets microcontrollers that does not have MMU. 
 - Rust + Verification towards Zero-overhead Isolation
     - Ideally we will have: 
-        - A verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB.
+        - A verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB. Most importantly, we need to prove the absence of unsoundness in safe Rust so that all reasonings based on the ownership system hold. 
         - On top of that we can build a verified runtime service and std for software sandboxes(memory allocator, IO etc). All interfaces are safe but to use some interface with higher order invariants the application developer must provide proofs(for example, assertions) to satisfy the preconditions of the interface  
-        - The sandboxed code is restricted to safe Rust so that the ownership system can provide memory safety guarantees(and information flow control? Enforcing security polices via types).
+        - The sandboxed code is restricted to safe Rust so that the ownership system can provide memory safety guarantees(and information flow control? Enforcing security polices via types). Also, in safe Rust, no inline assembly allowed so there will be no privileged instructions in the binary.
         - Cross domain call proxying for fault isolation(See Redleaf)
+        - Target application: safety-critical systems or real-time systems. No MMU. Direct mapping so TLB not needed. 
 
     - Unfortunately, Rust does not have a language specification. Memory model and operational semantics are not defined.
     - No third-party frontend compiler 
