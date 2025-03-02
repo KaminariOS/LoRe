@@ -67,6 +67,11 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
 
 - Sec-comp?
 
+### Back to segmenentation
+- All machine code rewriters are trying to build a simple mechanism similar to old x86 memory segmenentation.
+- There exists new hardware like [CHERI(capability hardware)](https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/) and [HFI(hardware-assisted software isolation)](https://cseweb.ucsd.edu/~tullsen/hfi.pdf)that can be used to implement software sandboxes.  
+- However, limitations of SFI due to lack of high-level semantic information persist.
+
 ## Idea
 
 - Is it possible to implement the private-shared heap design at machine code level?
@@ -84,10 +89,10 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     <!-- We need a foundational proof of the type system: check [RefineRust](https://plv.mpi-sws.org/refinedrust)(Try #25860 with refinedRust, unfortunately it does not work)  -->
     - [TRust](https://www.usenix.org/system/files/usenixsecurity23-bang.pdf) uses SFI(with source code) or Intel MPK(without source code, usually FFI) to isolate unsafe Rust code from safe Rust(12% overhead, high). Threat model: safe Rust code is trusted but unsafe code(as a dependency) is not.
     
-- Rust for Isolation
+- Rust(ownership) for Isolation
     <!-- - Preserve type info in the assembly? Not workable. The problem remains the same: the implementation of the type system may be buggy.  -->
     - The soundness of the Rust type system has been formulated by RustBelt(followup: RefinedRust)
-    - The unique ownership system of Rust can be used to establish protection domains(see [RedLeaf](https://www.usenix.org/system/files/osdi20-narayanan_vikram.pdf)) at almost zero cost 
+    - The unique ownership system of safe Rust can be used to establish protection domains(see [RedLeaf](https://www.usenix.org/system/files/osdi20-narayanan_vikram.pdf)) at almost zero cost 
     - Rust for isolation: TCB too huge: Rustc and LLVM. However, the benefit is 
         - (almost)zero-cost isolation , 
         - hardware-independent, 
@@ -96,12 +101,12 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     - The major problem: unsoundness bug in Rustc and LLVM: [unsoundness in safe Rust](https://github.com/rust-lang/rust/issues/25860#issuecomment-1955285462); [Open issues about unsoundness](https://github.com/rust-lang/rust/issues?q=state%3Aopen%20label%3A%22I-unsound%22)
     - [Rudra](https://taesoo.kim/pubs/2021/bae:rudra.pdf) also discusses this. One hole in the soundness can compromise the memory safety of the whole system: basically Rust degenerates to C. 
     - There exists research operating systems that implement isolation based on Rust safety: RedLeaf and TockOS. TockOS targets microcontrollers that does not have MMU. 
-- Rust + Verification for Isolation
+- Rust + Verification for Zero-overhead Isolation
     - Ideally we will have a verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB.
     - Unfortunately, Rust does not have a language specification. Memory model and operational semantics are not defined.
-    - No third-party frontend for Rust 
+    - No third-party frontend compiler 
     - Currently most Rust program verifier drives Rustc. Verus, especially, also relies of the correctness of the borrow checker of Rustc, 
-    - For the case of kernel extensions, the interface is suitable for formal verification, Can we ask extension developers to only write safe Rust and help provide proofs for the postconditions required by the interface. Is it possbile to ease extension developer burden by providing them a better Verification Programming Interface(like Vstd in Verus, Vstd provides axioms and external specs to make writing verification easier). 
+    - For the case of kernel extensions, the interface is suitable for formal verification. Can we ask extension developers to only write safe Rust and help provide proofs for the postconditions required by the interface? Is it possbile to ease extension developer burden by providing them a better Verification Programming Interface(like Vstd in Verus, Vstd provides axioms and external specs to make writing verification easier). 
     - Would it be easier to build a verified Rustc if we only support a limited subset of safe Rust? Or a checker for unsoundness. LLVM can stay in the TCB but at least we need a more trustworthy Rustc frontend. To check list:
         - Miri 
         - Ferrocene
