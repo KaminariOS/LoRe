@@ -107,8 +107,8 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     - There exists research operating systems that implement isolation based on Rust safety: RedLeaf and TockOS. TockOS targets microcontrollers that does not have MMU. 
 - Rust + Verification towards Zero-overhead Isolation
     - Ideally we will have: 
-        - A verified Rust compiler like CompCert for C. Then Rustc and LLVM are out of TCB. Most importantly, we need to prove the absence of unsoundness in safe Rust so that all reasonings based on the ownership system hold. 
-        - On top of that we can build a verified runtime service and std for software sandboxes(memory allocator, IO etc). All interfaces are safe but to use some interface with higher order invariants the application developer must provide proofs(for example, assertions) to satisfy the preconditions of the interface  
+        - A verified Rust compiler like CompCert for C. Then Rustc and LLVM will be out of TCB. Most importantly, we need to prove foundationally the absence of unsoundness in safe Rust so that all reasonings based on the ownership system hold. 
+        - On top of that we can build a verified(using a more efficient verifier like Verus) runtime service and std for software sandboxes(memory allocator, IO etc). All interfaces are safe but to use some interface with higher order invariants the application developer must provide proofs(for example, assertions) to satisfy the preconditions of the interface  
         - The sandboxed code is restricted to safe Rust so that the ownership system can provide memory safety guarantees(and information flow control? Enforcing security polices via types). Also, in safe Rust, no inline assembly allowed so there will be no privileged instructions in the binary.
         - Cross domain call proxying for fault isolation(See Redleaf)
         - Target application: safety-critical systems or real-time systems. No MMU. Direct mapping so TLB not needed. 
@@ -117,11 +117,12 @@ A sandboxed program lives in a logical 0-based address space. At runtime the act
     - No third-party frontend compiler 
     - Currently most Rust program verifier drives Rustc. Verus, especially, also relies of the correctness of the borrow checker of Rustc, 
     - For the case of kernel extensions, the interface is suitable for formal verification. Can we ask extension developers to only write safe Rust and help provide proofs for the postconditions required by the interface? Is it possbile to ease extension developer burden by providing them a better Verification Programming Interface(like Vstd in Verus, Vstd provides axioms and external specs to make writing verification easier). 
+    - main vs lib. In main safe and proof only. In lib also unsafe and axioms. . 
     - Would it be easier to build a verified Rustc if we only support a limited subset of safe Rust? Or a checker for unsoundness. LLVM can stay in the TCB but at least we need a more trustworthy Rustc frontend. To check list:
-        - Miri 
+        - Miri(implements Stacked Borrow, can dynamically detect unsoundness) 
         - Ferrocene
-        - RefinedRust
+        - RefinedRust(operates on MIR, verification time long...) 
         - MiniRust
-        - Check model checker Kani's approach for verifying Rust code 
+        - Check model checker Kani's approach for verifying Rust code(push-button, finite state space exploration, incomplete, not expressive enough to encode higher-order invariants) 
 
 
